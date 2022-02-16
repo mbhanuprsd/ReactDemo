@@ -1,114 +1,61 @@
-import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Route } from 'react-router-dom'
-import Header from './components/Header'
-import Footer from './components/Footer'
-import Tasks from './components/Tasks'
-import AddTask from './components/AddTask'
-import About from './components/About'
+import React, { Component } from 'react';
+import ReactGA from 'react-ga';
+import $ from 'jquery';
+import './App.css';
+import Header from './Components/Header';
+import Footer from './Components/Footer';
+import About from './Components/About';
+import Resume from './Components/Resume';
+import Contact from './Components/Contact';
+import Testimonials from './Components/Testimonials';
+import Portfolio from './Components/Portfolio';
 
-function App() {
-  const [showAddTask, setShowAddTask] = useState(false)
+class App extends Component {
 
-  const [tasks, setTasks] = useState([])
+  constructor(props){
+    super(props);
+    this.state = {
+      foo: 'bar',
+      resumeData: {}
+    };
 
-  useEffect(() => {
-    const getTasks = async () => {
-      const tasksFromServer = await fetchTasks()
-      setTasks(tasksFromServer)
-    }
+    ReactGA.initialize('UA-110570651-1');
+    ReactGA.pageview(window.location.pathname);
 
-    getTasks()
-  }, [])
-
-  // Fetch tasks
-  const fetchTasks = async () => {
-    const res = await fetch('http://localhost:5000/tasks')
-    const data = await res.json()
-
-    return data
   }
 
-  // Fetch task
-  const fetchTask = async (id) => {
-    const res = await fetch(`http://localhost:5000/tasks/${id}`)
-    const data = await res.json()
-
-    return data
+  getResumeData(){
+    $.ajax({
+      url:'/resumeData.json',
+      dataType:'json',
+      cache: false,
+      success: function(data){
+        this.setState({resumeData: data});
+      }.bind(this),
+      error: function(xhr, status, err){
+        console.log(err);
+        alert(err);
+      }
+    });
   }
 
-  // Add Task
-  const addTask = async (task) => {
-    const res = await fetch(`http://localhost:5000/tasks`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-type': 'application/json'
-        },
-        body: JSON.stringify(task),
-      })
-
-    const data = await res.json()
-
-    setTasks([...tasks, data])
-
-    // const id = Math.floor(Math.random * 10000) + 1;
-    // const newTask = {id, ...task};
-    // setTasks([...tasks, newTask])
+  componentDidMount(){
+    this.getResumeData();
   }
 
-  //Delete Task
-  const deleteTask = async (id) => {
-    await fetch(`http://localhost:5000/tasks/${id}`, {
-      method: 'DELETE'
-    })
-
-    setTasks(tasks.filter((task) => task.id !== id))
-  }
-
-  // Toggle Reminder
-  const toggleReminder = async (id) => {
-    const taskTOToggle = await fetchTask(id)
-    const updTask = { ...taskTOToggle, reminder: !taskTOToggle.reminder }
-
-    const res = await fetch(`http://localhost:5000/tasks/${id}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Content-type': 'application/json'
-        },
-        body: JSON.stringify(updTask)
-      })
-
-    const data = await res.json()
-
-    setTasks(tasks.map((task) => task.id === id
-      ? { ...task, reminder: data.reminder } : task))
-  }
-
-  return (
-    <Router>
-      <div className="container">
-        <Header onAdd={() => setShowAddTask(!showAddTask)}
-          showAdd={showAddTask} />
-        <Route
-          path='/'
-          exact
-          render={(props) => (
-            <>
-              {showAddTask && <AddTask onAdd={addTask} />}
-              {(tasks.length > 0)
-                ? <Tasks tasks={tasks}
-                  onDelete={deleteTask}
-                  onToggle={toggleReminder} />
-                : 'No Tasks to show!'
-              }
-            </>
-          )} />
-        <Route path='/about' component={About} />
-        <Footer />
+  render() {
+    return (
+      <div className="App">
+        <Header data={this.state.resumeData.main}/>
+        <About data={this.state.resumeData.main}/>
+        <Resume data={this.state.resumeData.resume}/>
+        <Portfolio data={this.state.resumeData.portfolio}/>
+        <Testimonials data={this.state.resumeData.testimonials}/>
+        <Contact data={this.state.resumeData.main}/>
+        <Footer data={this.state.resumeData.main}/>
       </div>
-    </Router>
-  );
+    );
+  }
 }
 
 export default App;
